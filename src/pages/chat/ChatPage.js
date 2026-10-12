@@ -11,16 +11,20 @@ import Button from '../../components/button/button';
 import Card from '../../components/card/card';
 import Spinner from '../../components/spinner/spinner';
 
+// JAVÍTÁS (4.): egyedi azonosító az üzeneteknek, hogy a key={index} helyett
+// stabil key-t használhassunk (mivel az üzeneteket elölre szúrjuk be, az indexek
+// minden új üzenetnél eltolódnának).
+const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 const ChatPage = (props) => {
 
-    
-    
     const myData = {socketId: props.socketId, username: props.username};
 
     const [users, setUsers] = useState([]);
 
-    const [filteredUsers, setFilteredUsers] = useState(users);
+    // JAVÍTÁS (4.): a filteredUsers state és a hozzá tartozó effect megszűnt.
+    // Helyette csak a keresőszöveget tároljuk, a szűrt lista renderben számolódik.
+    const [searchText, setSearchText] = useState('');
 
     const [chats, setChats] = useState([]);
 
@@ -37,7 +41,9 @@ const ChatPage = (props) => {
 
     const [settings, setSettings] = useState(false);
 
-    const [isSent, setIsSent] = useState(false);
+    // JAVÍTÁS (1.): az isSent state helyett useRef. Ez csak egy "emlékeztető" érték,
+    // nem kell tőle újrarenderelni, és nem szabad, hogy újrafuttassa az effectet.
+    const isSentRef = useRef(false);
     const [isTypeing, setIsTypeing] = useState(false);
 
     const chatsRef = useRef(chats);
@@ -46,14 +52,18 @@ const ChatPage = (props) => {
     const socket = props.socket;
 
     useEffect(() => {
-        socket.on("updateUsers", (data) => {
+        // JAVÍTÁS (3.): a handlerek névvel rendelkeznek, hogy a cleanupban
+        // le lehessen őket szedni (socket.off). Enélkül StrictModeban (és ha
+        // a socket prop változik) minden esemény többször lefutna.
+        const onUpdateUsers = (data) => {
             setUsers(data);
-        });
+        };
 
-        socket.on("privateMessage", (data) => {
+        const onPrivateMessage = (data) => {
             let newChats = [...chatsRef.current];
             const now = new Date();
-            const msg = {time: now.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }), message: data.message, author: data.username}
+            // JAVÍTÁS (4.): id hozzáadva az üzenethez
+            const msg = {id: makeId(), time: now.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }), message: data.message, author: data.username}
             const chatIndex = chatsRef.current.findIndex(chat => chat.socketID === data.from);
             if(chatIndex !== -1)
             {
@@ -84,13 +94,13 @@ const ChatPage = (props) => {
                     const [chat] = newChats.splice(chatIndex, 1);
                     newChats = [chat, ...newChats];
                 }
-                
+
             }
             else{
                 const newChat = {username: data.username, messages: [msg], socketID: data.from, newMsg: true};
                 newChats = [newChat, ...newChats];
             }
-            
+
             setChats(newChats);
 
             if(selectedUserRef.current)
@@ -100,10 +110,9 @@ const ChatPage = (props) => {
                     setIsTypeing(false);
                 }
             }
-            
-        })
+        };
 
-        socket.on('userDisconnect', (data) => {
+        const onUserDisconnect = (data) => {
             let Chats = [...chatsRef.current];
             const chatIndex = Chats.findIndex(chat => chat.socketID === data.socketID);
             if(chatIndex !== -1)
@@ -114,38 +123,57 @@ const ChatPage = (props) => {
                 }
             }
             setChats(Chats);
-        })
+        };
 
-        socket.on("typeing", (data) => {
+        const onTypeing = (data) => {
             if(selectedUserRef.current)
             {
                 if(selectedUserRef.current.socketID === data.from)
-                { 
+                {
                     setIsTypeing(true);
                 }
-            }     
-        })
+            }
+        };
 
-        socket.on("stopTypeing", (data) => {
+        const onStopTypeing = (data) => {
             if(selectedUserRef.current)
             {
                 if(selectedUserRef.current.socketID === data.from)
-                { 
-                    setIsTypeing(false);   
+                {
+                    setIsTypeing(false);
                 }
-            }     
-            
-        })
+            }
+        };
+
+        socket.on("updateUsers", onUpdateUsers);
+        socket.on("privateMessage", onPrivateMessage);
+        socket.on("userDisconnect", onUserDisconnect);
+        socket.on("typeing", onTypeing);
+        socket.on("stopTypeing", onStopTypeing);
+
+        // JAVÍTÁS (3.): cleanup, leszedjük a listenereket
+        return () => {
+            socket.off("updateUsers", onUpdateUsers);
+            socket.off("privateMessage", onPrivateMessage);
+            socket.off("userDisconnect", onUserDisconnect);
+            socket.off("typeing", onTypeing);
+            socket.off("stopTypeing", onStopTypeing);
+        };
 
     }, [socket]);
-    
 
+
+    // JAVÍTÁS (4.): a filteredUsers beállítása már nem kell az effectben,
+    // csak a loading kapcsolódik még az users változásához.
+    // Megjegyzés: ha a szerver sosem küld "updateUsers"-t, a spinner örökké látszik.
     useEffect(() => {
-        setFilteredUsers(users);
         setLoading(false);
     }, [users]);
 
-    
+    // JAVÍTÁS (4.): származtatott érték, renderben számoljuk
+    const filteredUsers = users.filter(user => user.username.toLowerCase().includes(searchText.toLowerCase()));
+
+
     let cards = '';
     let messages = <div className={styles.info}>
                     <FontAwesomeIcon className={styles.icon} icon={faCircleInfo} />
@@ -153,13 +181,14 @@ const ChatPage = (props) => {
                 </div>;
     if(selectedUser)
     {
-        messages = chats[selectedUser.index].messages.map((message,index) => {
+        messages = chats[selectedUser.index].messages.map((message) => {
             let type = "sent";
             if(message.author !== myData.username)
             {
                 type = "received";
             }
-            return <Message key={index} time={message.time} type={type} theme={themes[theme]}>{message.message}</Message>
+            // JAVÍTÁS (4.): key={message.id} a key={index} helyett
+            return <Message key={message.id} time={message.time} type={type} theme={themes[theme]}>{message.message}</Message>
         });
     }
     if(loading)
@@ -172,7 +201,7 @@ const ChatPage = (props) => {
             if(searchActive)
             {
                 cards = filteredUsers.map((user, index) => {
-                    if(filteredUsers !== null && user.username !== myData.username)
+                    if(user.username !== myData.username)
                     {
                         return <Card key={index} socketID={user.socketID} name={user.username} selected={false} clicked={() => selectUser(user.socketID, user.username)} new={false} ></Card>
                     }
@@ -184,9 +213,9 @@ const ChatPage = (props) => {
             else{
                 if(chats.length > 0)
                 {
-                    
+
                     cards = chats.map((chat, index) => {
-                        
+
                         let select = false;
                         let text = "";
                         if(chat.messages.length > 0)
@@ -198,7 +227,7 @@ const ChatPage = (props) => {
                         {
                             select = true;
                         }
-                            
+
                         return <Card key={index} name={chat.username} selected={select} clicked={() => selectUser(chat.socketID, chat.username)} new={chat.newMsg} offline={chat.offline} theme={themes[theme]}>{text}</Card>
                     })
                 }
@@ -218,19 +247,22 @@ const ChatPage = (props) => {
     }
 
 
-
+    // JAVÍTÁS (4.): csak a keresőszöveget mentjük, a szűrés renderben történik
     const userFilter = (event) => {
-        setFilteredUsers(users.filter(user => user.username.toLowerCase().includes(event.target.value.toLowerCase())));
+        setSearchText(event.target.value);
     }
 
 
-
     const selectUser = (socketID, username) => {
-        const userChk = chats.some(user => user.socketID === socketID);  
+        const userChk = chats.some(user => user.socketID === socketID);
         if(selectedUser)
         {
             socket.emit("stopTypeing", {to: selectedUser.socketID});
         }
+        // JAVÍTÁS (1.): partnerváltáskor visszaállítjuk a ref-et is, mert az új
+        // partnernek újra kell küldeni a "typeing" jelzést, amint gépelni kezdesz.
+        // (A "stopTypeing"-ot fentebb már elküldtük a réginek.)
+        isSentRef.current = false;
         setCurrentMessage('');
         setIsTypeing(false);
 
@@ -272,40 +304,44 @@ const ChatPage = (props) => {
         }
 
         chatsRef.current = chats;
-    }, [chats])
+        // JAVÍTÁS (4.): selectedUser hozzáadva a függőségekhez, mert az effect használja.
+        // Nem lesz végtelen ciklus, mert setSelectedUser csak eltérő indexnél hívódik.
+    }, [chats, selectedUser])
 
     useEffect(() => {
        selectedUserRef.current = selectedUser;
     }, [selectedUser])
 
+    // JAVÍTÁS (1.): a typing effect újraírva ref-fel, teljes függőségi listával.
+    // - üres inputnál induláskor nem megy ki felesleges "typeing"
+    // - nincs ping-pong, mert az isSentRef változása nem indít új futást
     useEffect(() => {
-        if(selectedUser)
+        if(!selectedUser) return;
+
+        if(currentMessage !== '' && !isSentRef.current)
         {
-            if(!isSent)
-            {
-                setIsSent(true);
-                socket.emit("typeing", {to: selectedUser.socketID});
-            } 
+            isSentRef.current = true;
+            socket.emit("typeing", {to: selectedUser.socketID});
+        }
+        else if(currentMessage === '' && isSentRef.current)
+        {
+            isSentRef.current = false;
+            socket.emit("stopTypeing", {to: selectedUser.socketID});
+        }
+    }, [currentMessage, selectedUser, socket])
 
-            if(currentMessage === '')
-            {
-                socket.emit("stopTypeing", {to: selectedUser.socketID});
-                setIsSent(false);
-            }  
-        }       
-    }, [currentMessage])
 
-    
 
 
 
     const handleInputChange = (event) => {
-        setCurrentMessage(event.target.value); 
+        setCurrentMessage(event.target.value);
     }
 
     const sendMessage = (to, message, username) => {
         const now = new Date();
-        const msg = {time: now.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }), message: message, author: username}
+        // JAVÍTÁS (4.): id hozzáadva az üzenethez
+        const msg = {id: makeId(), time: now.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }), message: message, author: username}
         let updatedChats = [...chats];
         updatedChats[selectedUser.index] = {
             ...updatedChats[selectedUser.index],
@@ -318,6 +354,8 @@ const ChatPage = (props) => {
         }
 
         setChats(updatedChats);
+        // A setCurrentMessage('') miatt a typing effect elküldi a "stopTypeing"-ot,
+        // így itt nem kell külön emit.
         setCurrentMessage('');
 
         socket.emit('sendMessage', {to, message, username});
@@ -335,7 +373,12 @@ const ChatPage = (props) => {
 
     const backToChats = () => {
         socket.emit("stopTypeing", {to: selectedUser.socketID});
-        setSelectedUser(null)
+        // JAVÍTÁS (2.): az isSentRef és az isTypeing visszaállítása. Enélkül, ha a partner
+        // épp gépelt, az isTypeing true maradt, selectedUser pedig null lett,
+        // és a JSX-ben a chats[selectedUser.index] összeomlást okozott.
+        isSentRef.current = false;
+        setIsTypeing(false);
+        setSelectedUser(null);
     }
 
     let header = '';
@@ -349,7 +392,7 @@ const ChatPage = (props) => {
                     {chats[selectedUser.index].offline ? <div style={{fontSize: 'Larger'}}>Offline</div> : ''}
                 </div>;
     }
-    
+
     return (
         <div style={{flexDirection: direction}} className={styles.wrapper} id={selectedUser ? styles.Chat : styles.Chats}>
             <div className={styles.chats} style={{backgroundColor: searchActive ? '#2A2A2A' : '#161616'}}>
@@ -371,8 +414,8 @@ const ChatPage = (props) => {
                             <div className={styles.direction}>
                                 <p>Direction</p>
                                 <div id={styles.images} className={styles.flex}>
-                                    <img style={{borderColor: direction === 'row' ? themes[theme] : ''}} src='/images/chat.png' alt='Chat' onClick={() => setDirection('row')}/>    
-                                    <img style={{borderColor: direction === 'row-reverse' ? themes[theme] : ''}} src='/images/chat.png' alt='Chat' onClick={() => setDirection('row-reverse')}/>    
+                                    <img style={{borderColor: direction === 'row' ? themes[theme] : ''}} src='/images/chat.png' alt='Chat' onClick={() => setDirection('row')}/>
+                                    <img style={{borderColor: direction === 'row-reverse' ? themes[theme] : ''}} src='/images/chat.png' alt='Chat' onClick={() => setDirection('row-reverse')}/>
                                 </div>
                             </div>
                             <div>
@@ -386,7 +429,7 @@ const ChatPage = (props) => {
                     <h1>{!settings ? 'Chats' : 'Settings'}</h1>
                     <FontAwesomeIcon id={styles.gearIcon} className={`${styles.icon} ${settings ? styles.rotate : ''}`} icon={faGear} onClick={() => setSettings(!settings)}/>
                 </div>
-                
+
                 <div>
                     <Input placeholder="Search" onFocus={() => {setSearchActive(true)}} onBlur={() => {setTimeout(() => {setSearchActive(false)},200)}} changed={userFilter} />
                 </div>
@@ -401,7 +444,9 @@ const ChatPage = (props) => {
                 {header}
                 <div className={styles.chatBody}>
                     {messages}
-                    <span className={styles.typing} style={{bottom: (isTypeing && !chats[selectedUser.index].offline) ? '0rem' : '-1rem'}}>{selectedUser ? chats[selectedUser.index].username : ''} is typing<div className={styles.dots}><div className={styles.dot}></div><div className={styles.dot}></div><div className={styles.dot}></div></div></span>
+                    {/* JAVÍTÁS (2.): selectedUser ellenőrzés a chats[selectedUser.index] elé,
+                        hogy null selectedUser esetén ne szálljon el a render. */}
+                    <span className={styles.typing} style={{bottom: (isTypeing && selectedUser && !chats[selectedUser.index].offline) ? '0rem' : '-1rem'}}>{selectedUser ? chats[selectedUser.index].username : ''} is typing<div className={styles.dots}><div className={styles.dot}></div><div className={styles.dot}></div><div className={styles.dot}></div></div></span>
                 </div>
 
 
