@@ -1,0 +1,357 @@
+.wrapper{
+    color: #fff;
+    box-sizing: border-box;
+    height: 100%;
+    display: flex;
+    padding: 2rem;
+    gap: 2rem;
+    max-width: 2000px;
+    margin: 0 auto;
+}
+
+.chats{
+    position: relative;
+    transition: .5s;
+    box-sizing: border-box;
+    flex: 1;
+    height: 100%;
+    border-radius: 25px;
+    padding: 1.5rem;
+    max-width: 34%;
+    min-width: 350px;
+    overflow: hidden;
+}
+
+.info{
+    display: flex;
+    align-items: center;
+    padding: 0 5rem;
+    gap: 1rem;
+    color: #848484;
+    margin: auto;
+}
+
+.info .icon{
+    height: 2.2rem;
+    width: auto;
+}
+
+.info a, .noChats span{
+    color: #256eff;
+    text-decoration: underline;
+}
+
+.usersOffline{
+    color: #848484;
+    margin: 2rem 0;
+    text-align: center;
+}
+
+.usersOffline .icon{
+    height: 5rem;
+}
+
+.noChats{
+    color: #848484;
+}
+
+.chatsHeader{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 200;
+}
+
+.chatsHeader h1{
+    margin: 0;
+    font-weight: 600;
+}
+
+.chats input{
+    margin: 2rem 0;
+    background-color: #242424;
+    color: white;
+}
+
+.cards{
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    height: calc(100% - 170px);
+    overflow: auto;
+}
+
+.chatHeader .flex{
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    
+}
+
+.chatHeader .backIcon{
+    display: none;
+}
+
+.icon{
+    font-size: 24px;
+}
+
+.rotate{
+    transform: rotate(-90deg);
+}
+
+#gearIcon{
+    cursor: pointer;
+    transition: .5s;
+}
+
+.chat{
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+}
+
+.chatHeader{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2rem;
+    background-color: #161616;
+    border-radius: 25px;
+    color: #7D7D7D;
+}
+
+.name{
+    font-size: 22px; 
+}
+
+.chatBody{
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column-reverse;
+    overflow: auto;
+    padding-bottom: .8rem;
+    position: relative;
+}
+
+.typing{
+    transition: .2s;
+    position: absolute;
+    font-size: small;
+    bottom: 0rem;
+    left: 5px;
+    color: #818181;
+    display: flex;
+}
+
+.dots{
+    display: flex;
+    align-items: flex-end;
+}
+
+.dot {
+    margin: 1px;
+    width: 2px;
+    height: 2px;
+    background-color: #818181;
+    border-radius: 50%;
+    animation: dotsAnimation 1500ms infinite;
+}
+
+.dot:nth-of-type(2){
+    animation-delay: 100ms;
+}
+
+.dot:nth-of-type(3){
+    animation-delay: 150ms;
+}
+
+.chatFooter{
+    display: flex;
+    gap: 1.2rem;
+    margin-top: 5px;
+}
+
+.chatFooter div{
+    flex: 95%;
+}
+
+.chatFooter input{
+    background-color: #161616;
+    color: white;
+}
+
+.chatFooter button{
+   flex: 5%;
+   min-width: 60px;
+}
+
+.settings{
+    background-color: #161616;
+    position: absolute;
+    z-index: 100;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 1.5rem;
+    padding-top: 7rem;
+}
+
+.settings .flex{
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.ring{
+    box-sizing: border-box;
+    width: 12%;
+    min-width: 50px;
+    max-width: 80px;
+    border-radius: 15px;
+    border: none;
+    transition: .1s;
+}
+
+.box{
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+#active{
+    border: 5px solid;
+    padding: .3rem;
+}
+
+#images{
+    justify-content: space-between;
+}
+
+#images img{
+    max-width: 47%;
+    width: 100%;
+    min-width: 140px;
+    padding: .5rem;
+    box-sizing: border-box;
+    background-color: #222222;
+    border-radius: 10px;
+    border: 5px solid rgb(56, 56, 56);
+    cursor: pointer;
+    transition: .2s;
+}
+
+#images img:last-child{
+    transform: scaleX(-1);
+}
+
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+  
+::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+  
+::-webkit-scrollbar-thumb {
+    background: #666666; 
+    border-radius: 10px; 
+}
+  
+::-webkit-scrollbar-thumb:hover {
+    background: #555; 
+}
+
+
+@media only screen and (max-width: 1000px) {
+
+    .wrapper{
+        padding: 0;
+    }
+
+    #Chats .chat{
+        display: none;
+    }
+
+    #Chat .chats{
+        display: none;
+    }
+
+    .chatHeader .backIcon{
+        display: block;
+    }
+
+    #Chats{
+        background-color: #161616;
+    }
+
+    .chat{
+        padding: 2rem;
+    }
+
+    .chats{
+        max-width: 100%;
+        border-radius: 0;
+        padding: 3rem;
+    }
+
+    .settings{
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+
+    .direction{
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 500px) {
+    .wrapper{
+        padding: 0;
+    }
+
+    .chat{
+        padding: .5rem .5rem .8rem .5rem;
+    }
+    
+    .chats{
+        padding: 2rem;
+    }
+
+    .chatHeader{
+        padding: 1.2rem;
+        border-radius: 20px;
+    }
+
+    .chatHeader{
+        font-size: 14px;
+    }
+
+    .chatHeader .name{
+        font-size: 18px;
+    }
+
+    .chatFooter{
+        gap: .7rem;
+    }
+
+    .chatFooter button, .chatFooter input{
+        padding: 1rem;
+    }
+
+    .settings{
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+
+@keyframes dotsAnimation {
+    0% {transform: translateY(0);}
+    20% {transform: translateY(-2px);}
+    40% {transform: translateY(0);}
+}
+

@@ -1,0 +1,44 @@
+.message{
+    display: flex;
+    margin: 4px 0;
+}
+
+.content{
+    margin: 0;
+    padding: .8rem;
+    border-radius: 20px;
+    max-width: 500px;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+.time{
+    margin: 1px 8px;
+    font-size: 12px;
+    color: #818181;
+    font-weight: 600;
+}
+
+#sent{
+    justify-content: right;
+}
+
+#sent div .content{
+    background-color: #1760F2;
+}
+
+#sent div .time{   
+    text-align: right; 
+}
+
+#received {
+    justify-content: left;
+}
+
+#received  div .content{
+    background-color: #484848;
+}
+
+#received  div .time{   
+    text-align: left; 
+}

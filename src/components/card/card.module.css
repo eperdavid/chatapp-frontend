@@ -1,0 +1,57 @@
+.card{
+    background-color: #484848;
+    padding: 1.2rem 2rem;
+    display: flex;
+    flex-direction: column;
+    border-radius: 25px;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.card .name{
+    font-weight: 600;
+}
+
+.card .message{
+    color: #BFBFBF;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.flex{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.new .message{
+    font-weight: bolder;
+}
+
+.dot{
+    padding: .5rem;
+    border-radius: 50%;
+}
+
+.new .dot{ 
+    background-color: #1760F2;  
+}
+
+.offline{
+    background-color: #848484;
+}
+
+.offline .dot{
+    background-color: #D9D9D9 !important;
+}
+
+.active{
+    background-color: #1760F2;
+}
+
+@media only screen and (max-width: 500px) {
+    .card{
+        padding: 1.2rem 1rem;
+    }
+}
